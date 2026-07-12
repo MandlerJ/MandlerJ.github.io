@@ -1,0 +1,42 @@
+---
+import type { Post } from '../utils/posts';
+import { formatDate, withBase } from '../utils/site';
+
+interface Props {
+  posts: Post[];
+  showYear?: boolean;
+}
+
+const { posts, showYear = false } = Astro.props;
+let lastYear = 0;
+---
+
+<div class="post-list">
+  {posts.map((post) => {
+    const year = post.data.published.getFullYear();
+    const shouldShowYear = showYear && year !== lastYear;
+    lastYear = year;
+    return (
+      <>
+        {shouldShowYear && <h2 class="archive-year">{year}</h2>}
+        <article class="post-row">
+          <div class="post-row-main">
+            <h3>
+              <a href={withBase(`/posts/${post.id}/`)}>{post.data.title}</a>
+              {post.data.draft && <span class="draft-badge">草稿</span>}
+            </h3>
+            <p>{post.data.description}</p>
+            {post.data.tags.length > 0 && (
+              <ul class="tag-list" aria-label="文章标签">
+                {post.data.tags.map((tag) => <li>{tag}</li>)}
+              </ul>
+            )}
+          </div>
+          <time datetime={post.data.published.toISOString()}>
+            {formatDate(post.data.published)}
+          </time>
+        </article>
+      </>
+    );
+  })}
+</div>

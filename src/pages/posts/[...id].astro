@@ -1,0 +1,76 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedPosts, getReadingTime, type Post } from '../../utils/posts';
+import { formatDate, withBase } from '../../utils/site';
+
+export const getStaticPaths = (async () => {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({ params: { id: post.id }, props: { post, posts } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  post: Post;
+  posts: Post[];
+}
+
+const { post, posts } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const currentIndex = posts.findIndex((item) => item.id === post.id);
+const newer = currentIndex > 0 ? posts[currentIndex - 1] : undefined;
+const older = currentIndex < posts.length - 1 ? posts[currentIndex + 1] : undefined;
+---
+
+<BaseLayout title={post.data.title} description={post.data.description} article>
+  <article class="article-shell">
+    <header class="article-header">
+      {post.data.draft && <p class="draft-notice">这是草稿，仅在本地开发环境中显示。</p>}
+      <p class="eyebrow">Atom Note</p>
+      <h1>{post.data.title}</h1>
+      <p class="article-description">{post.data.description}</p>
+      <div class="article-meta">
+        <time datetime={post.data.published.toISOString()}>{formatDate(post.data.published)}</time>
+        <span aria-hidden="true">·</span>
+        <span>{getReadingTime(post.body ?? '')}</span>
+        {post.data.updated && (
+          <><span aria-hidden="true">·</span><span>更新于 {formatDate(post.data.updated)}</span></>
+        )}
+      </div>
+      {post.data.tags.length > 0 && (
+        <ul class="tag-links" aria-label="文章标签">
+          {post.data.tags.map((tag) => (
+            <li><a href={withBase(`/tags/${encodeURIComponent(tag)}/`)}>#{tag}</a></li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    {toc.length > 1 && (
+      <nav class="toc" aria-label="本文目录">
+        <p>本文目录</p>
+        <ol>
+          {toc.map((heading) => (
+            <li class:list={[heading.depth === 3 && 'toc-subitem']}>
+              <a href={`#${heading.slug}`}>{heading.text}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )}
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <nav class="post-navigation" aria-label="相邻文章">
+      <div>
+        {newer && <><span>较新一篇</span><a href={withBase(`/posts/${newer.id}/`)}>{newer.data.title}</a></>}
+      </div>
+      <div class="post-navigation-next">
+        {older && <><span>较早一篇</span><a href={withBase(`/posts/${older.id}/`)}>{older.data.title}</a></>}
+      </div>
+    </nav>
+  </article>
+</BaseLayout>

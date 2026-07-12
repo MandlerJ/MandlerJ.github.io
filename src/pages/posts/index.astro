@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+import { getPublishedPosts } from '../../utils/posts';
+
+const posts = await getPublishedPosts();
+---
+
+<BaseLayout title="文章" description="Atom Note 的全部文章。">
+  <div class="page-shell page-intro">
+    <p class="eyebrow">Archive</p>
+    <h1>文章</h1>
+    <p>按时间收录所有已经完成的思考与记录。</p>
+  </div>
+  <section class="page-shell archive-section" aria-label="文章归档">
+    <PostList posts={posts} showYear />
+  </section>
+</BaseLayout>
